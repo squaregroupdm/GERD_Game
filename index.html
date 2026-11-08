@@ -1,0 +1,450 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>GERD Swipe</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Manrope:wght@500;600;700&family=Noto+Sans+Bengali:wght@500;600&display=swap">
+<style>
+  /* Layout: one phone-width column; the card stack is the hero, verdict stamps and two action buttons below it. */
+  :root {
+    --bg: #F2F6F8;
+    --surface: #FFFFFF;
+    --ink: #10212B;
+    --muted: #51626B;
+    --line: #D7E0E6;
+    --accent: #0F766E;
+    --safe: #177A43;
+    --safe-soft: #E3F5EA;
+    --alert: #BE371F;
+    --alert-soft: #FCEAE5;
+    --shadow: 0 18px 40px rgba(16, 33, 43, .14);
+    --display: "Sora", "Noto Sans Bengali", system-ui, sans-serif;
+    --body: "Manrope", "Noto Sans Bengali", system-ui, sans-serif;
+    --bn: "Noto Sans Bengali", "Manrope", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0E171D; --surface: #172229; --ink: #EAF1F4; --muted: #93A5AF; --line: #27363F;
+      --accent: #2FD1BF; --safe: #4ADE80; --safe-soft: #163424; --alert: #FF7A5C; --alert-soft: #3C1E18;
+      --shadow: 0 18px 40px rgba(0, 0, 0, .45); color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0E171D; --surface: #172229; --ink: #EAF1F4; --muted: #93A5AF; --line: #27363F;
+    --accent: #2FD1BF; --safe: #4ADE80; --safe-soft: #163424; --alert: #FF7A5C; --alert-soft: #3C1E18;
+    --shadow: 0 18px 40px rgba(0, 0, 0, .45); color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body);
+    padding-block: 16px 28px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    min-height: 100%; overflow-x: hidden; -webkit-tap-highlight-color: transparent;
+  }
+  .app { max-width: 420px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+
+  header { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+  h1 { font-family: var(--display); font-size: 1.35rem; margin: 0; letter-spacing: -.01em; }
+  .sub { color: var(--muted); font-size: .8rem; margin-top: 2px; font-family: var(--bn); }
+  .score { text-align: right; font-variant-numeric: tabular-nums; }
+  .score b { font-family: var(--display); font-size: 1.4rem; display: block; line-height: 1; }
+  .score span { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+  .mute {
+    width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface);
+    font-size: 1.1rem; cursor: pointer; display: grid; place-items: center; margin-bottom: 2px;
+  }
+  .mute:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .mute[aria-pressed="false"] { opacity: .55; }
+
+  .progress { display: flex; gap: 4px; }
+  .progress i { flex: 1; height: 5px; border-radius: 3px; background: var(--line); }
+  .progress i.safe { background: var(--safe); }
+  .progress i.alert { background: var(--alert); }
+  .progress i.wrong { background: var(--line); outline: 2px solid var(--alert); outline-offset: -2px; }
+
+  .stage { position: relative; height: min(60vh, 500px); min-height: 360px; }
+  .card {
+    position: absolute; inset: 0; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 24px; box-shadow: var(--shadow); display: flex; flex-direction: column;
+    justify-content: center; align-items: center; gap: 10px; padding: 24px; user-select: none;
+    touch-action: none; will-change: transform; transition: transform .35s cubic-bezier(.2,.8,.2,1), opacity .35s;
+    overflow: hidden;
+  }
+  .card.dragging { transition: none; cursor: grabbing; }
+  .card.top { cursor: grab; }
+  .card .emoji { font-size: clamp(88px, 28vw, 128px); line-height: 1; filter: drop-shadow(0 10px 18px rgba(0,0,0,.12)); }
+  .card .name { font-family: var(--display); font-size: 1.5rem; text-align: center; text-wrap: balance; }
+  .card .bn { font-family: var(--bn); font-size: 1.1rem; color: var(--muted); }
+  .card .tag { position: absolute; top: 16px; left: 18px; font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .stamp {
+    position: absolute; top: 22px; padding: 6px 12px; border: 3px solid; border-radius: 10px;
+    font-family: var(--display); font-size: 1.15rem; letter-spacing: .06em; text-transform: uppercase; opacity: 0;
+  }
+  .stamp.safe { right: 18px; color: var(--safe); border-color: var(--safe); transform: rotate(14deg); }
+  .stamp.alert { left: 18px; color: var(--alert); border-color: var(--alert); transform: rotate(-14deg); }
+
+  .hint {
+    position: absolute; inset: 0; border-radius: 24px; display: flex; align-items: center; justify-content: center;
+    background: rgba(16,33,43,.78); color: #fff; text-align: center; padding: 24px; z-index: 5;
+    font-weight: 600; font-size: 1rem; line-height: 1.5; backdrop-filter: blur(2px);
+  }
+  .hint div { max-width: 26ch; }
+  .hint .arrows { display: flex; justify-content: space-between; gap: 20px; margin-top: 14px; font-size: .85rem; }
+  .hint .arrows span { padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,.14); }
+
+  .actions { display: flex; justify-content: center; gap: 40px; }
+  .btn {
+    width: 66px; height: 66px; border-radius: 50%; border: 2px solid; background: var(--surface);
+    font-size: 1.6rem; cursor: pointer; display: grid; place-items: center; transition: transform .12s, background .12s;
+    box-shadow: 0 6px 16px rgba(16,33,43,.1);
+  }
+  .btn:active { transform: scale(.92); }
+  .btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .btn.left { color: var(--alert); border-color: var(--alert); }
+  .btn.right { color: var(--safe); border-color: var(--safe); }
+  .btn.left:hover { background: var(--alert-soft); }
+  .btn.right:hover { background: var(--safe-soft); }
+  .legend { display: flex; justify-content: center; gap: 40px; font-size: .8rem; color: var(--muted); margin-top: -6px; }
+  .legend span { width: 66px; text-align: center; font-family: var(--bn); }
+
+  .toast {
+    border-radius: 16px; padding: 12px 14px; display: flex; gap: 12px; align-items: flex-start;
+    border: 1px solid var(--line); background: var(--surface); min-height: 68px; opacity: 0; transform: translateY(6px);
+    transition: opacity .25s, transform .25s;
+  }
+  .toast.show { opacity: 1; transform: none; }
+  .toast .mark { font-family: var(--display); font-size: 1.3rem; line-height: 1; padding-top: 2px; }
+  .toast.ok { border-color: var(--safe); background: var(--safe-soft); }
+  .toast.bad { border-color: var(--alert); background: var(--alert-soft); }
+  .toast strong { display: block; font-size: .9rem; }
+  .toast p { margin: 2px 0 0; font-size: .82rem; color: var(--muted); line-height: 1.4; }
+
+  .result {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 24px; padding: 28px 22px;
+    display: flex; flex-direction: column; gap: 16px; text-align: center; box-shadow: var(--shadow);
+  }
+  .result .big { font-family: var(--display); font-size: 3rem; line-height: 1; font-variant-numeric: tabular-nums; }
+  .result .big small { font-size: 1.2rem; color: var(--muted); }
+  .result h2 { font-family: var(--display); margin: 0; font-size: 1.3rem; }
+  .result .bn { font-family: var(--bn); color: var(--muted); font-size: .95rem; }
+  .tips { text-align: left; display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+  .tips li { display: flex; gap: 10px; font-size: .85rem; line-height: 1.45; }
+  .tips li::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; margin-top: 7px; }
+  .missed { text-align: left; border-top: 1px solid var(--line); padding-top: 14px; }
+  .missed h3 { font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+  .missed div { display: flex; flex-wrap: wrap; gap: 6px; }
+  .missed span { font-size: .82rem; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); }
+  .missed span.alert { border-color: var(--alert); color: var(--alert); }
+  .missed span.safe { border-color: var(--safe); color: var(--safe); }
+  .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .pill {
+    font-family: var(--body); font-weight: 700; font-size: .9rem; border-radius: 999px; padding: 12px 22px;
+    border: 2px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer;
+  }
+  .pill.ghost { background: transparent; color: var(--accent); }
+  .pill:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .note { font-size: .8rem; color: var(--muted); text-align: center; line-height: 1.5; }
+  @media (prefers-reduced-motion: reduce) { .card, .toast, .btn { transition: none; } }
+</style>
+
+<div class="app">
+  <header>
+    <div>
+      <h1>GERD Swipe</h1>
+      <div class="sub">কোন খাবার অ্যাসিডিটি বাড়ায়? সোয়াইপ করে দেখুন</div>
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:12px">
+      <button class="mute" id="mute" aria-label="Toggle sound" aria-pressed="true">🔊</button>
+      <div class="score"><b id="scoreNum">0</b><span>correct</span></div>
+    </div>
+  </header>
+
+  <div class="progress" id="progress"></div>
+
+  <div id="game">
+    <div class="stage" id="stage">
+      <div class="hint" id="hint">
+        <div>
+          Swipe <b>right</b> if the food is safe for GERD.<br>Swipe <b>left</b> if it triggers acid reflux.
+          <div class="arrows"><span>← GERD Alert</span><span>Safe →</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top:18px">
+      <button class="btn left" id="btnLeft" aria-label="GERD alert">✕</button>
+      <button class="btn right" id="btnRight" aria-label="Safe from GERD">✓</button>
+    </div>
+    <div class="legend"><span>সতর্ক</span><span>নিরাপদ</span></div>
+
+    <div class="toast" id="toast" style="margin-top:14px">
+      <div class="mark" id="toastMark"></div>
+      <div><strong id="toastTitle"></strong><p id="toastBody"></p></div>
+    </div>
+  </div>
+
+  <div class="result" id="result" hidden>
+    <div class="big"><span id="finalScore">0</span><small>/12</small></div>
+    <h2 id="tier"></h2>
+    <div class="bn" id="tierBn"></div>
+    <ul class="tips">
+      <li>Small meals, eaten slowly. A full stomach pushes acid upward.</li>
+      <li>Stay upright for 3 hours after dinner. No lying down right after eating.</li>
+      <li>Fried, oily and very spicy food are the three biggest everyday triggers.</li>
+    </ul>
+    <div class="missed" id="missedWrap" hidden>
+      <h3>You missed these</h3>
+      <div id="missed"></div>
+    </div>
+    <div class="row">
+      <button class="pill" id="again">Play again</button>
+      <button class="pill ghost" id="share">Copy my score</button>
+    </div>
+    <div class="note">For awareness only. Heartburn more than twice a week needs a doctor's visit.</div>
+  </div>
+
+  <div class="note" id="footnote">Keyboard: ← left, → right</div>
+</div>
+
+<script>
+(function () {
+  const FOODS = [
+    // safe: true means the food is generally gentle on GERD
+    { e: "🍌", en: "Banana", bn: "কলা", safe: true, why: "Low acid and coats the stomach lining." },
+    { e: "🥣", en: "Oats", bn: "ওটস", safe: true, why: "High fibre that soaks up excess acid." },
+    { e: "🍚", en: "Plain boiled rice", bn: "সাদা ভাত", safe: true, why: "Bland, low fat and easy to digest." },
+    { e: "🍲", en: "Thin dal", bn: "পাতলা ডাল", safe: true, why: "Light protein with very little oil." },
+    { e: "🥭", en: "Papaya", bn: "পেঁপে", safe: true, why: "Papain enzyme helps digestion." },
+    { e: "🍉", en: "Watermelon", bn: "তরমুজ", safe: true, why: "Mostly water, very low acid." },
+    { e: "🥒", en: "Cucumber", bn: "শসা", safe: true, why: "Cooling, alkaline and low acid." },
+    { e: "🥬", en: "Bottle gourd (lau)", bn: "লাউ", safe: true, why: "Watery, light and easy on the stomach." },
+    { e: "🥔", en: "Boiled potato", bn: "সেদ্ধ আলু", safe: true, why: "Low acid, as long as it is not fried." },
+    { e: "🐟", en: "Grilled fish", bn: "গ্রিল মাছ", safe: true, why: "Lean protein without heavy oil." },
+    { e: "🫖", en: "Ginger tea", bn: "আদা চা", safe: true, why: "Ginger calms the stomach and eases nausea." },
+    { e: "🌿", en: "Leafy greens (shak)", bn: "শাক", safe: true, why: "Low fat, low acid, high fibre." },
+    { e: "🥚", en: "Boiled egg white", bn: "ডিমের সাদা অংশ", safe: true, why: "Lean protein, none of the yolk fat." },
+    { e: "🥥", en: "Coconut water", bn: "ডাবের পানি", safe: true, why: "Alkaline and hydrating, settles acid." },
+    { e: "🥕", en: "Carrot", bn: "গাজর", safe: true, why: "Low acid root vegetable, gentle on reflux." },
+    { e: "🍗", en: "Clear chicken soup", bn: "মুরগির স্যুপ", safe: true, why: "Light and low fat when the oil is skimmed." },
+    { e: "🍈", en: "Melon", bn: "বাঙ্গি", safe: true, why: "Low acid fruit, safe for most reflux patients." },
+    { e: "🍞", en: "Whole wheat bread", bn: "ব্রাউন ব্রেড", safe: true, why: "Fibre keeps acid in check." },
+
+    { e: "🍆", en: "Beguni", bn: "বেগুনি", safe: false, why: "Deep fried. Fat slows the stomach and pushes acid up." },
+    { e: "🥟", en: "Singara", bn: "সিঙ্গাড়া", safe: false, why: "Fried pastry, heavy on oil." },
+    { e: "🫙", en: "Fuchka with tamarind water", bn: "ফুচকা", safe: false, why: "Sour tamarind plus chilli: a double trigger." },
+    { e: "🍛", en: "Kacchi biryani", bn: "কাচ্চি বিরিয়ানি", safe: false, why: "Ghee, fat and spice all in one plate." },
+    { e: "🥘", en: "Beef bhuna", bn: "গরুর ভুনা", safe: false, why: "Oily, spicy and slow to digest." },
+    { e: "🌶️", en: "Green chilli", bn: "কাঁচা মরিচ", safe: false, why: "Capsaicin irritates the food pipe." },
+    { e: "🧅", en: "Raw onion", bn: "কাঁচা পেঁয়াজ", safe: false, why: "Relaxes the valve that keeps acid down." },
+    { e: "🍋", en: "Lemon", bn: "লেবু", safe: false, why: "Citric acid adds to stomach acid." },
+    { e: "🍅", en: "Tomato sauce", bn: "টমেটো সস", safe: false, why: "Naturally acidic, worse when concentrated." },
+    { e: "🥤", en: "Cold drink", bn: "কোল্ড ড্রিংকস", safe: false, why: "Carbonation bloats the stomach and forces acid up." },
+    { e: "☕", en: "Strong milk tea", bn: "কড়া দুধ চা", safe: false, why: "Caffeine loosens the valve above the stomach." },
+    { e: "🫘", en: "Coffee", bn: "কফি", safe: false, why: "Caffeine plus its own acids." },
+    { e: "🍫", en: "Chocolate", bn: "চকলেট", safe: false, why: "Relaxes the valve and is high in fat." },
+    { e: "🍗", en: "Fried chicken", bn: "ফ্রায়েড চিকেন", safe: false, why: "High fat, deep fried." },
+    { e: "🍕", en: "Pizza", bn: "পিৎজা", safe: false, why: "Cheese fat plus tomato acid." },
+    { e: "🍨", en: "Ice cream", bn: "আইসক্রিম", safe: false, why: "Full fat dairy slows digestion." },
+    { e: "🧄", en: "Raw garlic", bn: "কাঁচা রসুন", safe: false, why: "A common reflux trigger for many people." },
+    { e: "🍃", en: "Peppermint", bn: "পুদিনা", safe: false, why: "Feels cooling, but it relaxes the acid valve." },
+    { e: "🫓", en: "Paratha", bn: "পরোটা", safe: false, why: "Fried in oil or ghee, heavy on fat." },
+    { e: "🥫", en: "Achar (pickle)", bn: "আচার", safe: false, why: "Oil, sourness and chilli together." }
+  ];
+  const ROUND = 12;
+
+  const stage = document.getElementById("stage");
+  const hint = document.getElementById("hint");
+  const progress = document.getElementById("progress");
+  const scoreNum = document.getElementById("scoreNum");
+  const toast = document.getElementById("toast");
+  const toastMark = document.getElementById("toastMark");
+  const toastTitle = document.getElementById("toastTitle");
+  const toastBody = document.getElementById("toastBody");
+  const game = document.getElementById("game");
+  const result = document.getElementById("result");
+  const footnote = document.getElementById("footnote");
+
+  let deck = [], index = 0, score = 0, results = [], locked = false, hintShown = true;
+
+  /* ---- Sound: synthesized buzzes, no audio files ---- */
+  let soundOn = true, actx = null;
+  try { soundOn = localStorage.getItem("gerd-sound") !== "off"; } catch (e) {}
+  const muteBtn = document.getElementById("mute");
+  function paintMute() { muteBtn.textContent = soundOn ? "🔊" : "🔇"; muteBtn.setAttribute("aria-pressed", String(soundOn)); }
+  paintMute();
+  muteBtn.addEventListener("click", () => {
+    soundOn = !soundOn; paintMute();
+    try { localStorage.setItem("gerd-sound", soundOn ? "on" : "off"); } catch (e) {}
+    if (soundOn) buzz("safe");
+  });
+  function ctx() {
+    if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+    if (actx.state === "suspended") actx.resume();
+    return actx;
+  }
+  function tone(ac, type, f0, f1, t0, dur, gain, dist) {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t0 + dur);
+    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(gain, t0 + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    if (dist) { const ws = ac.createWaveShaper(), c = new Float32Array(256); for (let i = 0; i < 256; i++) { const x = i / 128 - 1; c[i] = Math.tanh(x * 4); } ws.curve = c; o.connect(ws); ws.connect(g); } else o.connect(g);
+    g.connect(ac.destination); o.start(t0); o.stop(t0 + dur + 0.02);
+  }
+  // kind: "swipe" = card leaves, "safe" = correct, "alert" = wrong
+  function buzz(kind) {
+    if (!soundOn) return;
+    const ac = ctx(); if (!ac) return;
+    const t = ac.currentTime;
+    if (kind === "swipe") { tone(ac, "sawtooth", 180, 60, t, 0.14, 0.12, true); }
+    else if (kind === "safe") { tone(ac, "square", 220, 220, t, 0.09, 0.08, true); tone(ac, "triangle", 660, 990, t + 0.09, 0.16, 0.12, false); }
+    else { tone(ac, "sawtooth", 110, 95, t, 0.32, 0.22, true); tone(ac, "square", 55, 50, t, 0.32, 0.12, true); }
+  }
+  function vibrate(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
+
+  function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+  function newDeck() {
+    const safe = shuffle(FOODS.filter(f => f.safe)).slice(0, ROUND / 2);
+    const bad = shuffle(FOODS.filter(f => !f.safe)).slice(0, ROUND / 2);
+    return shuffle(safe.concat(bad)).map(f => FOODS.indexOf(f));
+  }
+
+  function start(state) {
+    deck = Array.isArray(state.deck) && state.deck.length === ROUND ? state.deck : newDeck();
+    index = state.index || 0; score = state.score || 0; results = state.results || [];
+    hintShown = state.hintShown !== false;
+    render();
+  }
+
+  function render() {
+    scoreNum.textContent = score;
+    progress.innerHTML = "";
+    for (let i = 0; i < ROUND; i++) {
+      const bar = document.createElement("i");
+      const r = results[i];
+      if (r) bar.className = r.correct ? (FOODS[deck[i]].safe ? "safe" : "alert") : "wrong";
+      progress.appendChild(bar);
+    }
+    stage.querySelectorAll(".card").forEach(c => c.remove());
+    if (index >= ROUND) { showResult(); return; }
+    game.hidden = false; result.hidden = true; footnote.hidden = false;
+    hint.hidden = !hintShown;
+    // bottom two cards first, top card last so it sits on top
+    for (let i = Math.min(index + 2, ROUND - 1); i >= index; i--) stage.appendChild(makeCard(deck[i], i - index));
+  }
+
+  function makeCard(fi, depth) {
+    const f = FOODS[fi];
+    const el = document.createElement("div");
+    el.className = "card" + (depth === 0 ? " top" : "");
+    el.style.transform = `translateY(${depth * 10}px) scale(${1 - depth * 0.04})`;
+    el.style.zIndex = 3 - depth;
+    el.innerHTML = `<span class="tag">${index + 1} of ${ROUND}</span>
+      <div class="stamp safe">Safe</div><div class="stamp alert">Alert</div>
+      <div class="emoji">${f.e}</div><div class="name">${f.en}</div><div class="bn">${f.bn}</div>`;
+    if (depth === 0) attachDrag(el);
+    return el;
+  }
+
+  function attachDrag(el) {
+    let startX = 0, startY = 0, dx = 0, dy = 0, active = false;
+    const safeStamp = el.querySelector(".stamp.safe"), alertStamp = el.querySelector(".stamp.alert");
+    el.addEventListener("pointerdown", e => {
+      if (locked) return;
+      active = true; startX = e.clientX; startY = e.clientY; dx = dy = 0;
+      if (soundOn) ctx();
+      el.classList.add("dragging"); el.setPointerCapture(e.pointerId);
+      if (hintShown) { hintShown = false; hint.hidden = true; }
+    });
+    el.addEventListener("pointermove", e => {
+      if (!active) return;
+      dx = e.clientX - startX; dy = e.clientY - startY;
+      el.style.transform = `translate(${dx}px, ${dy * 0.4}px) rotate(${dx / 14}deg)`;
+      safeStamp.style.opacity = Math.min(1, Math.max(0, dx / 90));
+      alertStamp.style.opacity = Math.min(1, Math.max(0, -dx / 90));
+    });
+    const end = () => {
+      if (!active) return; active = false; el.classList.remove("dragging");
+      if (dx > 100) decide(true, el);
+      else if (dx < -100) decide(false, el);
+      else { el.style.transform = ""; safeStamp.style.opacity = 0; alertStamp.style.opacity = 0; }
+    };
+    el.addEventListener("pointerup", end);
+    el.addEventListener("pointercancel", end);
+  }
+
+  function decide(saidSafe, el) {
+    if (locked || index >= ROUND) return;
+    locked = true;
+    if (hintShown) { hintShown = false; hint.hidden = true; }
+    const card = el || stage.querySelector(".card.top");
+    const f = FOODS[deck[index]];
+    const correct = saidSafe === f.safe;
+    results[index] = { correct };
+    if (correct) score++;
+    buzz("swipe");
+    setTimeout(() => buzz(correct ? "safe" : "alert"), 120);
+    vibrate(correct ? 30 : [60, 40, 120]);
+    if (card) {
+      card.querySelector(saidSafe ? ".stamp.safe" : ".stamp.alert").style.opacity = 1;
+      card.style.transform = `translate(${saidSafe ? 520 : -520}px, -40px) rotate(${saidSafe ? 28 : -28}deg)`;
+      card.style.opacity = 0;
+    }
+    toast.className = "toast show " + (correct ? "ok" : "bad");
+    toastMark.textContent = correct ? "✓" : "✕";
+    toastTitle.textContent = (correct ? "Correct. " : "Not quite. ") + f.en + (f.safe ? " is safe from GERD" : " is a GERD alert");
+    toastBody.textContent = f.why;
+    setTimeout(() => { index++; locked = false; render(); }, 420);
+  }
+
+  function showResult() {
+    game.hidden = true; result.hidden = false; footnote.hidden = true;
+    document.getElementById("finalScore").textContent = score;
+    const tier = document.getElementById("tier"), tierBn = document.getElementById("tierBn");
+    if (score === ROUND) { tier.textContent = "Reflux Pro"; tierBn.textContent = "আপনার পাকস্থলী আপনাকে ধন্যবাদ জানাচ্ছে"; }
+    else if (score >= 9) { tier.textContent = "Gut Smart"; tierBn.textContent = "প্রায় সব ঠিক। ভালো অভ্যাস আছে আপনার"; }
+    else if (score >= 6) { tier.textContent = "Getting There"; tierBn.textContent = "কিছু খাবার এখনো চমকে দিচ্ছে"; }
+    else { tier.textContent = "Time for a Rethink"; tierBn.textContent = "প্রতিদিনের অনেক খাবারই অ্যাসিড বাড়ায়"; }
+    const missedWrap = document.getElementById("missedWrap"), missed = document.getElementById("missed");
+    missed.innerHTML = "";
+    deck.forEach((fi, i) => {
+      if (results[i] && !results[i].correct) {
+        const f = FOODS[fi];
+        const s = document.createElement("span");
+        s.className = f.safe ? "safe" : "alert";
+        s.textContent = f.en + (f.safe ? " · safe" : " · alert");
+        missed.appendChild(s);
+      }
+    });
+    missedWrap.hidden = missed.children.length === 0;
+    toast.className = "toast";
+  }
+
+  document.getElementById("btnLeft").addEventListener("click", () => decide(false));
+  document.getElementById("btnRight").addEventListener("click", () => decide(true));
+  document.addEventListener("keydown", e => {
+    if (game.hidden) return;
+    if (e.key === "ArrowLeft") decide(false);
+    if (e.key === "ArrowRight") decide(true);
+  });
+  document.getElementById("again").addEventListener("click", () => {
+    deck = newDeck(); index = 0; score = 0; results = []; toast.className = "toast"; render();
+  });
+  document.getElementById("share").addEventListener("click", function () {
+    const text = `GERD Swipe: I scored ${score}/${ROUND}. Can you spot the foods that trigger acid reflux?`;
+    const btn = this;
+    const done = () => { btn.textContent = "Copied"; setTimeout(() => btn.textContent = "Copy my score", 1600); };
+    try { navigator.clipboard.writeText(text).then(done).catch(() => fallback()); } catch (e) { fallback(); }
+    function fallback() {
+      const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); done(); } catch (e) { btn.textContent = text; }
+      ta.remove();
+    }
+  });
+
+  if (window.claude && window.claude.hot && window.claude.hot.snapshot) {
+    window.claude.hot.snapshot(() => ({ deck, index, score, results, hintShown }));
+  }
+  (window.claude && window.claude.hot && window.claude.hot.ready) ? window.claude.hot.ready(start) : start((window.claude && window.claude.hot && window.claude.hot.data) || {});
+})();
+</script>
+
+</body></html>
